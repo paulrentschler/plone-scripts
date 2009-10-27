@@ -1,0 +1,64 @@
+# External Method for migrating TopicWithRichTextField objects
+#  to Topic objects and loosing the Rich Text information
+#  in Plone 2.5. Done in preparation for migrating to Plone 3.x
+#
+# Written by: Paul Rentschler
+# Help from: Eric Steele, Craig Haynal, and Michael Miller
+# Creation Date: 26 October 2009
+#
+
+from Products.ATContentTypes.interface import IATTopicCriterion
+
+def MigrateRTFTopics(self):
+  # get a list of TopicWithRichTextField objects from the catalog
+  for topic in self.portal_catalog(portal_type='TopicWithRichTextField'):
+    # get the object based on the reference from the catalog
+    topicObj = topic.getObject()
+
+    # filter the list of objects to just ones that have export/export in the url
+    if 'export/export' in topicObj.absolute_url():
+      print 'MIGRATING: ' + topicObj.absolute_url()
+
+      # determine the directory this object sits in
+      directory = self
+      for x in topicObj.getPhysicalPath()[1:-1]:
+        directory = getattr(directory, x)
+      print 'DIR: ' + directory.absolute_url()
+
+      # define the values for the new object
+      newId = str(topicObj.id) + "-export"
+      newTitle = str(topic.Title) + " (export)"
+      newDesc = topic.Description
+
+
+      # make sure the folder restrictions allow adding a topic object
+      topicAdded = 0
+      currentConstrainMode = directory.getConstrainTypesMode()
+      if currentConstrainMode <> 1:
+        # ConstrainTypesMode = 1 means to use manually set restrictions instead of inheriting
+        directory.setConstrainTypesMode(1)
+      currentLocalTypes = directory.getLocallyAllowedTypes()
+      if 'Topic' not in currentLocalTypes:
+        newLocalTypes = currentLocalTypes + ('Topic',)
+        directory.setLocallyAllowedTypes(newLocalTypes)
+        topicAdded = 1 
+
+
+      # create the new topic object
+      directory.invokeFactory('Topic', id=newId, title=newTitle, description=newDesc)
+      print 'DONE: ' + directory[newId].absolute_url() + "\n"
+
+      # copy the criteria over to the new Topic object
+      criteria = []
+      for obj in topicObj.objectValues():
+        if IATTopicCriterion.providedBy(obj):
+          criteria.append(obj.id)
+      topicCriteria = topicObj.manage_copyObjects(tuple(criteria))
+      directory[newId].manage_pasteObjects(topicCriteria)
+
+
+      # put the folder restrictions back if necessary
+      if topicAdded == 1:
+        directory.setLocallyAllowedTypes(currentLocalTypes)
+        if currentConstrainMode <> 1:
+          directory.setConstrainTypesMode(currentConstrainMode)

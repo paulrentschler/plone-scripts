@@ -9,8 +9,9 @@ def ImportFSDPeople(self):
   file = self['fsd-import.csv']
   
   # define who will be the personal assistant for these people
-  asstId = "mrs364"
-  asstUID = self.people[asstId].UID()
+  asstId = ""
+  if asstId <> "":
+    asstUID = self.people[asstId].UID()
   
   # set the location of the FSD
   directory = self.people
@@ -35,12 +36,14 @@ def ImportFSDPeople(self):
           directory[id].at_post_create_script()
       
      
-        # do not add the personal assistant if it's the person
-        if id <> asstId: 
-          # get the personal assistants for this person
-          currentAssistants = directory[id].getAssistants()
-    
-          # if the personal assistant is not assigned to this person, assign them
-          if not asstUID in currentAssistants:
-            currentAssistants.extend([asstUID])
-            directory[id].setAssistants(currentAssistants)
+        # see if a personal assistant was specified
+        if asstID <> "":
+          # do not add the personal assistant if it's the person
+          if id <> asstId: 
+            # get the personal assistants for this person
+            currentAssistants = directory[id].getAssistants()
+      
+            # if the personal assistant is not assigned to this person, assign them
+            if not asstUID in currentAssistants:
+              currentAssistants.extend([asstUID])
+              directory[id].setAssistants(currentAssistants)

@@ -1,0 +1,273 @@
+# External Method for determining how our keywords 
+#  are being used on the site and making necessary
+#  changes to use new keywords
+
+# Written by: Paul Rentschler (par117@psu.edu)
+# Created on: 9 August 2010
+
+
+
+from Products.CMFCore.utils import getToolByName
+from Products.Relations.processor import process
+
+
+def keywordChanges(self):
+    #listObjectByKeyword(self)
+    #listCollectionsByKeyword(self)
+    changeKeywordsToSpecialties(self)
+
+
+
+def changeKeywordsToSpecialties(self):
+    conversionTable = {
+        'contact - bioinformatics and genomics graduate program' : 'contact-bg-graduate-program',
+        'contact - cdb graduate program' : 'contact-cdb-graduate-program',
+        'contact - chemical biology graduate program' : 'contact-cb-graduate-program',
+        'contact - ecology graduate program' : 'contact-ecology-graduate-program',
+        'contact - genetics graduate program' : 'contact-genetics-graduate-program',
+        'contact - iid graduate program' : 'contact-iid-graduate-program',
+        'contact - master of biotechnology graduate program' : 'contact-biotechnology-graduate-program',
+        'contact - microbial genomics training grant' : 'contact-microbial-genomics-training-grant',
+        'contact - mm graduate program' : 'contact-mm-graduate-program',
+        'contact - mt graduate program' : 'contact-mt-graduate-program',
+        'contact - neuroscience graduate program' : 'contact-neuroscience-graduate-program',
+        'contact - neuroscience institute' : 'contact-neuroscience-institute',
+        'contact - physiology graduate program' : 'contact-physiology-graduate-program',
+        'contact - plant biology graduate program' : 'contact-pb-graduate-program',
+                       }
+    
+    specialtyRulesetId = getToolByName(self, 'relations_library').getRuleset('people_specialties').getId()
+    people = self.portal_catalog(portal_types='FSDPerson')
+    for person in people:
+        personObj = person.getObject()
+        for keyword in conversionTable.keys():
+            if keyword in personObj.Subject():
+                specialtyUID = self.portal_catalog(id=conversionTable[keyword], portal_type="FSDSpecialty")[0].UID
+                # You mustmustmust use the Relations API to add references, sayeth Relations/doc/Overview.txt.
+                process(self, connect=((personObj.UID(), specialtyUID, specialtyRulesetId),))
+
+
+
+def listCollectionsByKeyword(self):
+    results = {
+                  'Huck Institutes' : [],
+                  'bioimaging' : [],
+                  'bioinformatics and genomics' : [],
+                  'biotechnology' : [],
+                  'board: neuroscience institute' : [],
+                  'bortree' : [],
+                  'calorimetry' : [],
+                  'cell and developmental biology' : [],
+                  'cellular and molecular physiology' : [],
+                  'center' : [],
+                  'center for cellular dynamics' : [],
+                  'center for gene regulation' : [],
+                  'center for medical genomics' : [],
+                  'center: molecular and cellular neuroscience' : [],
+                  'chemical biology' : [],
+                  'chemical ecology' : [],
+                  'conatct - bioinformatics and genomics graduate program' : [],
+                  'contact - bioinformatics and genomics graduate program' : [],
+                  'contact - biotechnology institute' : [],
+                  'contact - cdb graduate program' : [],
+                  'contact - chemical biology graduate program' : [],
+                  'contact - ecology graduate program' : [],
+                  'contact - genetics graduate program' : [],
+                  'contact - iid graduate program' : [],
+                  'contact - master of biotechnology graduate program' : [],
+                  'contact - microbial genomics training grant' : [],
+                  'contact - mm graduate program' : [],
+                  'contact - mt graduate program' : [],
+                  'contact - neuroscience graduate program' : [],
+                  'contact - neuroscience institute' : [],
+                  'contact - physiology graduate program' : [],
+                  'contact - plant biology graduate program' : [],
+                  'cytometry' : [],
+                  'distinguished lecture' : [],
+                  'ecology' : [],
+                  'edu: Masters programs' : [],
+                  'edu: Opportunities' : [],
+                  'edu: PhD programs' : [],
+                  'edu: Training grants' : [],
+                  'facility' : [],
+                  'facility: electron microscopy' : [],
+                  'facility: x-ray crystallography' : [],
+                  'faq' : [],
+                  'find a facility' : [],
+                  'genetics' : [],
+                  'geo-genetics' : [],
+                  'graduate program' : [],
+                  'hershey' : [],
+                  'home page' : [],
+                  'immunology and infectious disease' : [],
+                  'infectious disease cluster hire' : [],
+                  'infectious disease dynamics' : [],
+                  'inter program' : [],
+                  'international students' : [],
+                  'microbiology' : [],
+                  'misc' : [],
+                  'molecular medicine' : [],
+                  'molecular toxicology' : [],
+                  'molecules other than nucleic acids' : [],
+                  'mouse' : [],
+                  'neuroscience' : [],
+                  'noll' : [],
+                  'nucleic acid' : [],
+                  'nucleic acids' : [],
+                  'people' : [],
+                  'physiology' : [],
+                  'plant biology' : [],
+                  'proteomics and mass spec' : [],
+                  'religion and science seminar' : [],
+                  'rock ethics' : [],
+                  'sleic imaging group' : [],
+                  'tissues, tumors and transgenics' : [],
+                  'university park' : [],
+            }
+    
+    brains = self.portal_catalog( portal_type='Topic' )
+    for entry in brains:
+        obj = entry.getObject()
+        for criteria in obj.listCriteria():
+            if criteria.Field() == 'Subject':
+                for keyword in criteria.Value():
+                    try:
+                        results[keyword].append(obj.absolute_url())
+                    except:
+                        pass
+                break
+    
+    FILE = open('keyword-collections.txt', 'w')
+    for keyword in results.keys():
+        FILE.write("\n\n--- " + keyword + " ---\n")
+        for url in results[keyword]:
+            FILE.write("     " + url + "\n")
+    FILE.close()
+            
+
+
+
+
+
+
+def listObjectByKeyword(self):
+    portalTypes = [ 'FSDPerson',
+                    'File',
+                    'News Item',
+                    'Link',
+                    'Conference',
+                    'Document',
+                    'Topic',
+                    'TalkEvent',
+                    'Image',
+                    'Folder',
+                    'Event',
+                    'FieldsetFolder',
+                    'FormFolder',
+                    'TalkEventStudent',
+                    'SymLink',
+                    'Training',
+                    'Large Plone Folder',
+                    'FlashMovie',
+                    'Protocol',
+                    'FSDCommitteesFolder',
+                    'FSDCommittee',
+                    'FSDCommitteeMembership',
+                    'ExternalMeeting',
+                    'ConferenceStudent',
+                    'FSDFacultyStaffDirectory',
+                  ]
+                  
+    results = {
+                  'Huck Institutes' : [],
+                  'bioimaging' : [],
+                  'bioinformatics and genomics' : [],
+                  'biotechnology' : [],
+                  'board: neuroscience institute' : [],
+                  'bortree' : [],
+                  'calorimetry' : [],
+                  'cell and developmental biology' : [],
+                  'cellular and molecular physiology' : [],
+                  'center' : [],
+                  'center for cellular dynamics' : [],
+                  'center for gene regulation' : [],
+                  'center for medical genomics' : [],
+                  'center: molecular and cellular neuroscience' : [],
+                  'chemical biology' : [],
+                  'chemical ecology' : [],
+                  'conatct - bioinformatics and genomics graduate program' : [],
+                  'contact - bioinformatics and genomics graduate program' : [],
+                  'contact - biotechnology institute' : [],
+                  'contact - cdb graduate program' : [],
+                  'contact - chemical biology graduate program' : [],
+                  'contact - ecology graduate program' : [],
+                  'contact - genetics graduate program' : [],
+                  'contact - iid graduate program' : [],
+                  'contact - master of biotechnology graduate program' : [],
+                  'contact - microbial genomics training grant' : [],
+                  'contact - mm graduate program' : [],
+                  'contact - mt graduate program' : [],
+                  'contact - neuroscience graduate program' : [],
+                  'contact - neuroscience institute' : [],
+                  'contact - physiology graduate program' : [],
+                  'contact - plant biology graduate program' : [],
+                  'cytometry' : [],
+                  'distinguished lecture' : [],
+                  'ecology' : [],
+                  'edu: Masters programs' : [],
+                  'edu: Opportunities' : [],
+                  'edu: PhD programs' : [],
+                  'edu: Training grants' : [],
+                  'facility' : [],
+                  'facility: electron microscopy' : [],
+                  'facility: x-ray crystallography' : [],
+                  'faq' : [],
+                  'find a facility' : [],
+                  'genetics' : [],
+                  'geo-genetics' : [],
+                  'graduate program' : [],
+                  'hershey' : [],
+                  'home page' : [],
+                  'immunology and infectious disease' : [],
+                  'infectious disease cluster hire' : [],
+                  'infectious disease dynamics' : [],
+                  'inter program' : [],
+                  'international students' : [],
+                  'microbiology' : [],
+                  'misc' : [],
+                  'molecular medicine' : [],
+                  'molecular toxicology' : [],
+                  'molecules other than nucleic acids' : [],
+                  'mouse' : [],
+                  'neuroscience' : [],
+                  'noll' : [],
+                  'nucleic acid' : [],
+                  'nucleic acids' : [],
+                  'people' : [],
+                  'physiology' : [],
+                  'plant biology' : [],
+                  'proteomics and mass spec' : [],
+                  'religion and science seminar' : [],
+                  'rock ethics' : [],
+                  'sleic imaging group' : [],
+                  'tissues, tumors and transgenics' : [],
+                  'university park' : [],
+            }
+                
+    brains = self.portal_catalog()
+    for entry in brains:
+        if entry.portal_type in portalTypes:
+            obj = entry.getObject()
+            objKeywords = obj.Subject()
+            for keyword in results.keys():
+                if keyword in objKeywords:
+                    results[keyword].append(obj.absolute_url())
+                  
+    FILE = open('keyword-usage.txt', 'w')
+    for keyword in results.keys():
+        FILE.write("\n\n--- " + keyword + " ---\n")
+        for url in results[keyword]:
+            FILE.write("     " + url + "\n")
+    FILE.close()
+            
+    #import pdb; pdb.set_trace()

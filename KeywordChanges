@@ -19,6 +19,11 @@ def keywordChanges(self):
 
 
 def changeKeywordsToSpecialties(self):
+    """Add the appropriate specialty to each person object that is
+       tagged with the cooresponding keyword.
+       """
+       
+    # format: keyword = specialty id
     conversionTable = {
         'contact - bioinformatics and genomics graduate program' : 'contact-bg-graduate-program',
         'contact - cdb graduate program' : 'contact-cdb-graduate-program',
@@ -49,6 +54,10 @@ def changeKeywordsToSpecialties(self):
 
 
 def listCollectionsByKeyword(self):
+    """Generates a text file in the Plone instance folder that contains a list
+       of all specified keywords and what collections they are used in throughout
+       the Plone site.
+       """
     results = {
                   'Huck Institutes' : [],
                   'bioimaging' : [],
@@ -143,14 +152,14 @@ def listCollectionsByKeyword(self):
         for url in results[keyword]:
             FILE.write("     " + url + "\n")
     FILE.close()
-            
-
-
-
 
 
 
 def listObjectByKeyword(self):
+    """Generates a text file in the Plone instance folder that contains a list
+       of all specified keywords and what objects are tagged with them throughout
+       the Plone site.
+       """
     portalTypes = [ 'FSDPerson',
                     'File',
                     'News Item',
@@ -269,5 +278,3 @@ def listObjectByKeyword(self):
         for url in results[keyword]:
             FILE.write("     " + url + "\n")
     FILE.close()
-            
-    #import pdb; pdb.set_trace()

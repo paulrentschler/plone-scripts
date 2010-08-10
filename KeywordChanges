@@ -42,14 +42,17 @@ def changeKeywordsToSpecialties(self):
                        }
     
     specialtyRulesetId = getToolByName(self, 'relations_library').getRuleset('people_specialties').getId()
-    people = self.portal_catalog(portal_types='FSDPerson')
+    people = self.portal_catalog(portal_type='FSDPerson')
     for person in people:
-        personObj = person.getObject()
-        for keyword in conversionTable.keys():
-            if keyword in personObj.Subject():
-                specialtyUID = self.portal_catalog(id=conversionTable[keyword], portal_type="FSDSpecialty")[0].UID
-                # You mustmustmust use the Relations API to add references, sayeth Relations/doc/Overview.txt.
-                process(self, connect=((personObj.UID(), specialtyUID, specialtyRulesetId),))
+        if person.portal_type != 'FSDPerson':
+            print "%s is not an FSDPerson object, its a %s" % (person.id, person.portal_type)
+        else:
+            personObj = person.getObject()
+            for keyword in conversionTable.keys():
+                if keyword in personObj.Subject():
+                    specialtyUID = self.portal_catalog(id=conversionTable[keyword], portal_type="FSDSpecialty")[0].UID
+                    # You mustmustmust use the Relations API to add references, sayeth Relations/doc/Overview.txt.
+                    process(self, connect=((personObj.UID(), specialtyUID, specialtyRulesetId),))
 
 
 

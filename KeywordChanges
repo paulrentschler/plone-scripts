@@ -14,7 +14,113 @@ from Products.Relations.processor import process
 def keywordChanges(self):
     #listObjectByKeyword(self)
     #listCollectionsByKeyword(self)
-    changeKeywordsToSpecialties(self)
+    #changeKeywordsToSpecialties(self)
+    pass
+
+
+
+def swapKeywords(self):
+    """Given a dict of old/new keywords, find all the objects with the old 
+       keywords and replace them with the new keywords
+       """
+    
+    #format: old = new
+    conversionTable = {
+        'Huck Institutes' : 'events: huck graduate program seminars',
+        'bioimaging' : 'findfacility: bioimaging',
+        'bioinformatics and genomics' : 'findfacility: bioinformatics and genomics',
+        'biotechnology' : 'gradprg: biotechnology',
+        'board: neuroscience institute' : 'admin: neuroscience institute board',
+        'bortree' : 'events: bortree',
+        'calorimetry' : 'facility: calorimetry',
+        'cell and developmental biology' : 'gradprg: cell and developmental biology',
+        'cellular and molecular physiology' : 'events: cellular and molecular physiology',
+        'center' : '',
+        'center for cellular dynamics' : 'center: cellular dynamics',
+        'center for gene regulation' : 'center: gene regulation',
+        'center for medical genomics' : 'center: medical genomics',
+        'center: molecular and cellular neuroscience' : 'center: molecular investigation of neurological discorders',
+        'chemical biology' : 'gradprg: chemical biology',
+        'chemical ecology' : 'events: other talks',
+        'cytometry' : 'facility: flow cytometry',
+        'distinguished lecture' : 'events: distinguished lectures',
+        'ecology' : 'events: ecology',
+        'edu: Masters programs' : 'admin: masters programs',
+        'edu: Opportunities' : 'admin: graduate student opportunities',
+        'edu: PhD programs' : 'admin: phd programs',
+        'edu: Training grants' : 'admin: training grants',
+        'facility' : 'facility: all',
+        'faq' : 'faq: general',
+        'find a facility' : 'admin: find a facility',
+        'genetics' : 'gradprg: genetics',
+        'geo-genetics' : 'events: geo-genetics',
+        'graduate program' : 'faq: student resources',
+        'hershey' : 'campus: hershey',
+        'home page' : 'spotlight: home page',
+        'immunology and infectious disease' : 'gradprg: immunology and infectious disease',
+        'infectious disease cluster hire' : 'events: infectious disease cluster hire',
+        'infectious disease dynamics' : 'events: infectious disease dynamics',
+        'inter program' : 'events: interdisciplinary',
+        'international students' : '',
+        'microbiology' : 'events: microbiology',
+        'misc' : 'events: other talks',
+        'molecular medicine' : 'gradprg: molecular medicine',
+        'molecular toxicology' : 'gradprg: molecular toxicology',
+        'molecules other than nucleic acids' : 'findfacility: molecules other than nucleic acids',
+        'mouse' : '',
+        'neuroscience' : 'events: neuroscience',
+        'noll' : 'events: noll',
+        'nucleic acid' : '',
+        'nucleic acids' : 'findfacility: genomics',
+        'people' : '',
+        'physiology' : 'events: physiology',
+        'plant biology' : 'events: plant biology',
+        'proteomics and mass spec' : 'facility: proteomics and mass spec',
+        'religion and science seminar' : 'events: religion and science',
+        'rock ethics' : 'events: rock ethics',
+        'sleic imaging group' : 'events: sleic imaging group',
+        'tissues, tumors and transgenics' : 'findfacility: tissues, tumors and transgenics',
+        'university park' : 'campus: university park',
+                      }
+    
+    brains = self.portal_catalog()
+    for brain in brains:
+        obj = brain.getObject()
+        try:
+            # get the object's keywords
+            keywords = obj.Subject()
+            newKeywords = replaceKeywords(keywords, conversionTable)
+            obj.setSubject(tuple(newKeywords))
+            obj.reindexObject()
+        except:
+            pass
+        
+        if obj.portal_type == 'Topic':
+            for criterion in obj.listCriteria():
+                if criterion.portal_type == 'ATSelectionCriterion' and criterion.Field() == 'Subject':
+                    newSelections = replaceKeywords(criterion.Value(), conversionTable)
+                    criterion.setValue(tuple(newSelections))
+                    criterion.reindexObject()
+    
+    print "Done!"
+
+
+
+def replaceKeywords(keywords, conversionTable):
+    """helper function for swapKeywords
+       """
+    newKeywords = []
+    # look at each keyword and see if it should be replaced
+    for keyword in keywords:
+        try:
+            newKeyword = conversionTable[keyword]
+            if newKeyword != '':
+                newKeywords.append(newKeyword)
+        except KeyError:
+            # keep keywords that have not been found in the conversion table
+            newKeywords.append(keyword)
+            
+    return newKeywords
 
 
 

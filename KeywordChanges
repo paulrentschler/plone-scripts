@@ -89,7 +89,14 @@ def swapKeywords(self):
         try:
             # get the object's keywords
             keywords = obj.Subject()
-            newKeywords = replaceKeywords(keywords, conversionTable)
+            if obj.portal_type == 'FSDPerson':
+                # remove all keywords (preserve the neuroscience board members)
+                if 'board: neuroscience institute' in keywords:
+                    newKeywords = ['admin: neuroscience institute board', ]
+                else:
+                    newKeywords = []
+            else:
+                newKeywords = replaceKeywords(keywords, conversionTable)
             obj.setSubject(tuple(newKeywords))
             obj.reindexObject()
         except:

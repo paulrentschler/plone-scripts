@@ -85,8 +85,8 @@ def swapKeywords(self):
     
     brains = self.portal_catalog()
     for brain in brains:
-        obj = brain.getObject()
         try:
+            obj = brain.getObject()
             # get the object's keywords
             keywords = obj.Subject()
             if obj.portal_type == 'FSDPerson':

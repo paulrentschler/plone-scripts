@@ -1,0 +1,28 @@
+# External Method to upgrade TalkEventTypes to the
+#   newest 3.0 version that includes postponing and
+#   rescheduling events.
+
+# Written by: Paul Rentschler (par117@psu.edu)
+# Created on: 23 June 2011
+
+
+
+from Products.CMFCore.utils import getToolByName
+from Products.Relations.processor import process
+
+
+def upgradeTalkEvents(self):
+    brains = self.portal_catalog(portal_type='TalkEvent')
+    for brain in brains:
+        obj = brain.getObject()
+        try:
+            print "%s" % obj.Title()
+            print "%s" % obj.absolute_url()
+
+            obj.eventPostponed = False
+            modified(obj)
+            #obj.reindexObject()
+        except:
+            pass
+    
+    print "Done!"

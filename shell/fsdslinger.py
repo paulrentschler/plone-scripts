@@ -20,7 +20,7 @@ from xmlrpclib import ServerProxy
 
 
 class FSDslinger(object):
-        '''an class for bulk import of Faculty Staff Directory people and images into a Plone site'''
+        '''a class for bulk import of Faculty Staff Directory people and images into a Plone site'''
 
         logger = getLogger('FSDSlinger')
         fieldnamesMap = {}
@@ -137,7 +137,7 @@ class FSDslinger(object):
                 fsdPerson = {}
                 for key, value in person.items():
                     try:
-                        fsdPerson[self.fieldnamesMap[key]] = value
+                        fsdPerson[self.fieldnamesMap[key]] = value.strip()
                     except KeyError:
                         print "No key [%s] in the fieldnames map" % key
                         pass
@@ -145,7 +145,7 @@ class FSDslinger(object):
                 # add the person's classification
                 if 'Classification' in person and person['Classification'] != '':
                     try:
-                        fsdPerson['classifications'] = [self.classificationsMap[person['Classification']]]
+                        fsdPerson['classifications'] = [self.classificationsMap[person['Classification'].strip()]]
                     except:
                         # the person doesn't have a classification
                         pass
@@ -155,9 +155,9 @@ class FSDslinger(object):
                     personSpecialties = person['Specialties'].split(',')
                     for personSpecialty in personSpecialties:
                         try:
-                            fsdPerson['specialties'].append(self.specialtiesMap[personSpecialty])
+                            fsdPerson['specialties'].append(self.specialtiesMap[personSpecialty.strip()])
                         except:
-                            fsdPerson['specialties'] = [self.specialtiesMap[personSpecialty]]
+                            fsdPerson['specialties'] = [self.specialtiesMap[personSpecialty.strip()]]
 
                 # add the advisors
                 if 'Advisors' in person and person['Advisors'] != '':
@@ -187,20 +187,20 @@ class FSDslinger(object):
 
                 # fix the job title
                 if 'jobTitles' in fsdPerson and fsdPerson['jobTitles'] != '':
-                    fsdPerson['jobTitles'] = [fsdPerson['jobTitles']]
+                    fsdPerson['jobTitles'] = [fsdPerson['jobTitles'].strip()]
 
                 #fix the campus
                 if 'campus' in fsdPerson and fsdPerson['campus'] != '':
-                    fsdPerson['campus'] = [fsdPerson['campus'], '']
+                    fsdPerson['campus'] = [fsdPerson['campus'].strip(), '']
 
                 # add the various web sites together
                 websiteKeys = ['Personal website', 'Lab website', 'Other website']
                 for websiteKey in websiteKeys:
                     if websiteKey in person and person[websiteKey] != '':
                         try:
-                            fsdPerson['websites'].append(person[websiteKey])
+                            fsdPerson['websites'].append(person[websiteKey].strip())
                         except:
-                            fsdPerson['websites'] = [person[websiteKey]]
+                            fsdPerson['websites'] = [person[websiteKey].strip()]
 
 
                 # append the person to the list of people to add/update
@@ -216,7 +216,7 @@ class FSDslinger(object):
                information based on what is contained in the newPersonData dictionary.
                """
             # get the existing person object from the Plone site
-            existingPersonBrain = self.client.query({'Type': 'Person', 'id':newPersonData['id']})
+            existingPersonBrain = self.client.query({'Type': 'Person', 'id':newPersonData['id'].strip()})
             if len(existingPersonBrain) == 1:
                 existingPersonObj = self.client.get_object([existingPersonBrain.keys()[0]])
                 try:
@@ -235,7 +235,7 @@ class FSDslinger(object):
                             # we have data, see if we can include it
                             if fillInField in existingPersonData and existingPersonData[fillInField] == "":
                                 # the field is blank, so we can fill it in
-                                existingPersonData[fillInField] = newPersonData[fillInField]
+                                existingPersonData[fillInField] = newPersonData[fillInField].strip()
                                 
                     # add any new specialties to the person
                     if 'specialties' in newPersonData:
@@ -262,21 +262,21 @@ class FSDslinger(object):
                     jobTitles = []
                     for jobTitle in existingPersonData['jobTitles']:
                         if "Graduate student" in newPersonData['jobTitles'] and "graduate student" not in jobTitle.lower():
-                            jobTitles.append(jobTitle)
+                            jobTitles.append(jobTitle.strip())
                         
                     if 'jobTitles' in newPersonData:
                         for jobTitle in newPersonData['jobTitles']:
-                            if jobTitle not in jobTitles:
+                            if jobTitle.strip() not in jobTitles:
                                 # the job title does not exist, add it
-                                jobTitles.append(jobTitle)
+                                jobTitles.append(jobTitle.strip())
                     existingPersonData['jobTitles'] = jobTitles
                                 
                     # add any new web sites to the person
                     if 'websites' in newPersonData:
                         for website in newPersonData['websites']:
-                            if website not in existingPersonData['websites']:
+                            if website.strip() not in existingPersonData['websites']:
                                 # the web site does not exist, add it
-                                existingPersonData['websites'].append(website)
+                                existingPersonData['websites'].append(website.strip())
                                 
                     # TODO: find a better solution than this hack!
                     # Plone complains about the format of the dateTime values, so

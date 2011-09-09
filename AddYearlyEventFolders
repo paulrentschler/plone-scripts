@@ -25,7 +25,6 @@ def addYearFolders(self):
     foldersToProcess = [
                          'calendar',
                          'education/ecology/events/ecology-colloquium-schedule',
-                         'education/plant-biology/seminars/past',
                        ]
     
     for aFolder in foldersToProcess:
@@ -103,6 +102,8 @@ def addNextYearFolder(self, folderUrl, thisYear):
     nextYearFolder = folderObj[nextYearFolderId]
     nextYearFolder.setLocallyAllowedTypes(thisYearFolder.getLocallyAllowedTypes())
     nextYearFolder.setImmediatelyAddableTypes(thisYearFolder.getImmediatelyAddableTypes())
+    # give the nextYear folder the same sharing permissions as the thisYear folder
+    nextYearFolder.__ac_local_roles__ = thisYearFolder.__ac_local_roles__
     
     
     try:

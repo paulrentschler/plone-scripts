@@ -1,8 +1,13 @@
-# External Method for for creating the yearly folders that live under each
-# calendar event grouping and seminar series folder.
+# External Method that creates the yearly folders that 
+#   live under each event grouping and seminar series folder.
+#
+# The script has a predefined list of folders to work with
+#   and loops through them adding the next year's folder
+#   to each one assuming there is a current year folder
+#   already there.
 
-#Written by: Paul Rentschler (par117@psu.edu)
-#Created on: 14 July 2010
+# @author Paul Rentschler <par117@psu.edu>
+# @since 14 July 2010
 
 import datetime
 import DateTime
@@ -10,26 +15,37 @@ import DateTime
 
 
 def addYearFolders(self):
-    """Looks at all the folders in the /calendar folder and adds
-    the appropriate next year subfolder to folders that already
-    have a subfolder for the current year."""
+    """Defines all the folders to be processed and then loops
+       through them adding the next year's subfolder to it
+       assuming that the subfolder isn't already there and
+       that the current year subfolder is present."""
 
     thisYear = datetime.datetime.now().year
-    
+
+    foldersToProcess = [
+                         'calendar',
+                         'education/ecology/events/ecology-colloquium-schedule',
+                         'education/plant-biology/seminars/past',
+                       ]    
     #processFolder(client, '/huck/calendar', thisYear)
     #processFolder(client, '/huck/calendar/other-types-of-event', thisYear)
     #processFolder(client, '/huck/calendar/training-and-orientation-events', thisYear)
     #processFolder(self, 'calendar/conferences-and-workshops', thisYear)
-    processFolder(self, 'calendar/talks-and-seminars/plant-biology', thisYear)
+    
+    for aFolder in foldersToProcess:
+        processFolder(self, aFolder, thisYear)
 
     print "Done!\n\n"
 
 
 
 def processFolder(self, folderUrl, thisYear):
-    """Looks at the specified folder to see if next year subfolders need to
-    be added. If no year folders exist, then it recursively processes
-    the subfolders."""
+    """Looks at the specified folder to see if there are any folders with
+       an id of 2007 through the next year.
+       If there are not, a recursive call is made to any subfolders.
+       If there are and the current year folder exists but not next year's
+       folder, then next year's folder is created. The collection is copied
+       and modified from the current year."""
 
     # define next year based on the provided "thisYear"
     nextYear = thisYear + 1
@@ -58,6 +74,7 @@ def processFolder(self, folderUrl, thisYear):
             # see if there are events
             thisYearFolderUrl = folderUrl + '/' + str(thisYear)
             thisYearFolder = self.restrictedTraverse(thisYearFolderUrl)
+            import pdb; pdb.set_trace();
             
             if thisYearFolder.portal_type == 'Folder':
                 # this year's folder exists: create next year's folder
@@ -73,38 +90,41 @@ def processFolder(self, folderUrl, thisYear):
 
 def addNextYearFolder(self, folderUrl, thisYear):
     """Adds a subfolder to the specified folder that is based on
-    the specified current year folder."""
+       the specified current year folder."""
 
     # define next year based on the provided "thisYear"
     nextYear = thisYear + 1
     
-    # define the folder urls for the years
-    thisYearFolderUrl = folderUrl + '/' + str(thisYear)
-    nextYearFolderUrl = folderUrl + '/' + str(nextYear)
+    # get the specified folder object and the current year folder object
+    folderObj = self.restrictedTraverse(folderUrl)
+    thisYearFolder = folderObj[str(thisYear)]
 
 
-    # get the folder definition for thisYear
-    thisYearFolder = self.restrictedTraverse(thisYearFolderUrl)
-    
-    # add the nextYear folder to the site
-    nextYearFolderId = thisYearFolder.aq_parent.invokeFactory(type_name='Folder', id=str(nextYear))
-    nextYearFolder = self.restrictedTraverse(folderUrl + '/' + nextYearFolderId)
-    nextYearFolder.setTitle(str(nextYear))
-    nextYearFolder.setDescription(thisYearFolder.Description().replace(str(thisYear), str(nextYear)).strip())
+    # add the nextYear folder to the site using information from the thisYear folder
+    nextYearFolderId = folderObj.invokeFactory( type_name='Folder', 
+                                                id=str(nextYear),
+                                                title=str(nextYear),
+                                                description=thisYearFolder.Description().replace(str(thisYear), str(nextYear)).strip(),
+                                              )
+    nextYearFolder = folderObj[nextYearFolderId]
     nextYearFolder.setLocallyAllowedTypes(thisYearFolder.getLocallyAllowedTypes())
     nextYearFolder.setImmediatelyAddableTypes(thisYearFolder.getImmediatelyAddableTypes())
     
     
     # get the collection definition for thisYear
-    thisYearCollection = self.restrictedTraverse(thisYearFolderUrl + '/full-list')
+    thisYearCollection = thisYearFolder['full-list']
     
-    # add the nextYear collection to the site
-    nextYearCollectionId = nextYearFolder.invokeFactory(type_name='Topic', id='full-list')
-    nextYearCollection = self.restrictedTraverse(nextYearFolderUrl + '/' + nextYearCollectionId)
-    nextYearCollection.setTitle(thisYearCollection.Title().replace(str(thisYear), str(nextYear)).strip())
-    nextYearCollection.setDescription(thisYearCollection.Description().replace(str(thisYear), str(nextYear)).strip())
-    thisYearCriterion = thisYearCollection.listCriteria()
-    for criterion in thisYearCriterion:
+    # add the nextYear collection to the site and make it the default page for the nextYear folder
+    nextYearCollectionId = nextYearFolder.invokeFactory( type_name='Topic',
+                                                         id='full-list',
+                                                         title=thisYearCollection.Title().replace(str(thisYear), str(nextYear)).strip(),
+                                                         description=thisYearCollection.Description().replace(str(thisYear), str(nextYear)).strip(),
+                                                       )
+    nextYearFolder.setDefaultPage(nextYearCollectionId)
+    nextYearCollection = nextYearFolder['full-list']
+    
+    # add the criteria to the nextYearCollection based on the thisYearCollection criteria
+    for criterion in thisYearCollection.listCriteria():
         myCriteria = nextYearCollection.addCriterion(str(criterion.field), criterion.portal_type)
         if criterion.portal_type == 'ATPortalTypeCriterion' or \
            criterion.portal_type == 'ATSelectionCriterion':
@@ -134,5 +154,3 @@ def addNextYearFolder(self, folderUrl, thisYear):
             print "NOTICE! No method of handling the criterion for %s\n" % criterion.id
             import pdb; pdb.set_trace()
             
-    
-    nextYearFolder.setDefaultPage(nextYearCollectionId)

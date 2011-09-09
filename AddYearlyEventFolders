@@ -26,11 +26,7 @@ def addYearFolders(self):
                          'calendar',
                          'education/ecology/events/ecology-colloquium-schedule',
                          'education/plant-biology/seminars/past',
-                       ]    
-    #processFolder(client, '/huck/calendar', thisYear)
-    #processFolder(client, '/huck/calendar/other-types-of-event', thisYear)
-    #processFolder(client, '/huck/calendar/training-and-orientation-events', thisYear)
-    #processFolder(self, 'calendar/conferences-and-workshops', thisYear)
+                       ]
     
     for aFolder in foldersToProcess:
         processFolder(self, aFolder, thisYear)
@@ -60,7 +56,7 @@ def processFolder(self, folderUrl, thisYear):
         thisYearExists = False
         nextYearExists = False
         existingYears = []
-        years = range(2007, nextYear)
+        years = range(2007, nextYear + 1)
         for subfolder in folder.listFolderContents():
             for year in years:
                 if str(year) == subfolder.id:
@@ -71,14 +67,12 @@ def processFolder(self, folderUrl, thisYear):
                         nextYearExists = True
 
         if thisYearExists and not nextYearExists:
-            # see if there are events
-            thisYearFolderUrl = folderUrl + '/' + str(thisYear)
-            thisYearFolder = self.restrictedTraverse(thisYearFolderUrl)
-            import pdb; pdb.set_trace();
-            
+            thisYearFolder = folder[str(thisYear)]
             if thisYearFolder.portal_type == 'Folder':
-                # this year's folder exists: create next year's folder
-                addNextYearFolder(self, folderUrl, thisYear)
+                # see if there are events (there is always one item, the collection)
+                if len(thisYearFolder.listFolderContents()) > 1:
+                    # this year's folder exists and has events: create next year's folder
+                    addNextYearFolder(self, folderUrl, thisYear)
                 
         elif not thisYearExists and not nextYearExists and len(existingYears) == 0:
             print "recursively process each subfolder"
@@ -111,46 +105,50 @@ def addNextYearFolder(self, folderUrl, thisYear):
     nextYearFolder.setImmediatelyAddableTypes(thisYearFolder.getImmediatelyAddableTypes())
     
     
-    # get the collection definition for thisYear
-    thisYearCollection = thisYearFolder['full-list']
+    try:
+        # get the collection definition for thisYear
+        thisYearCollection = thisYearFolder['full-list']
     
-    # add the nextYear collection to the site and make it the default page for the nextYear folder
-    nextYearCollectionId = nextYearFolder.invokeFactory( type_name='Topic',
-                                                         id='full-list',
-                                                         title=thisYearCollection.Title().replace(str(thisYear), str(nextYear)).strip(),
-                                                         description=thisYearCollection.Description().replace(str(thisYear), str(nextYear)).strip(),
-                                                       )
-    nextYearFolder.setDefaultPage(nextYearCollectionId)
-    nextYearCollection = nextYearFolder['full-list']
+        # add the nextYear collection to the site and make it the default page for the nextYear folder
+        nextYearCollectionId = nextYearFolder.invokeFactory( type_name='Topic',
+                                                             id='full-list',
+                                                             title=thisYearCollection.Title().replace(str(thisYear), str(nextYear)).strip(),
+                                                             description=thisYearCollection.Description().replace(str(thisYear), str(nextYear)).strip(),
+                                                           )
+        nextYearFolder.setDefaultPage(nextYearCollectionId)
+        nextYearCollection = nextYearFolder['full-list']
     
-    # add the criteria to the nextYearCollection based on the thisYearCollection criteria
-    for criterion in thisYearCollection.listCriteria():
-        myCriteria = nextYearCollection.addCriterion(str(criterion.field), criterion.portal_type)
-        if criterion.portal_type == 'ATPortalTypeCriterion' or \
-           criterion.portal_type == 'ATSelectionCriterion':
-            try:
-                myCriteria.setValue(criterion.value)
-            except:
-                print "ERROR! Failed to setValue for %s\n" % myCriteria.id
+        # add the criteria to the nextYearCollection based on the thisYearCollection criteria
+        for criterion in thisYearCollection.listCriteria():
+            myCriteria = nextYearCollection.addCriterion(str(criterion.field), criterion.portal_type)
+            if criterion.portal_type == 'ATPortalTypeCriterion' or \
+               criterion.portal_type == 'ATSelectionCriterion':
+                try:
+                    myCriteria.setValue(criterion.value)
+                except:
+                    print "ERROR! Failed to setValue for %s\n" % myCriteria.id
                 
-        elif criterion.portal_type == 'ATSortCriterion':
-            pass
+            elif criterion.portal_type == 'ATSortCriterion':
+                pass
             
-        elif criterion.portal_type == 'ATDateRangeCriterion':
-            try:
-                myCriteria.setStart(DateTime.DateTime(str(nextYear) + '-01-01 12:00:00am'))
-                myCriteria.setEnd(DateTime.DateTime(str(nextYear) + '-12-31 11:55:00pm'))
-            except:
-                print "ERROR! Failed to setStart and/or setEnd for %s\n" % myCriteria.id
+            elif criterion.portal_type == 'ATDateRangeCriterion':
+                try:
+                    myCriteria.setStart(DateTime.DateTime(str(nextYear) + '-01-01 12:00:00am'))
+                    myCriteria.setEnd(DateTime.DateTime(str(nextYear) + '-12-31 11:55:00pm'))
+                except:
+                    print "ERROR! Failed to setStart and/or setEnd for %s\n" % myCriteria.id
                 
-        elif criterion.portal_type == 'ATPathCriterion':
-            try:
-                myCriteria.setValue(criterion.Value())
-                myCriteria.setRecurse(criterion.Recurse())
-            except:
-                print "ERROR! Failed to setValue and/or setRecurse for %s\n" % myCriteria.id
+            elif criterion.portal_type == 'ATPathCriterion':
+                try:
+                    myCriteria.setValue(criterion.Value())
+                    myCriteria.setRecurse(criterion.Recurse())
+                except:
+                    print "ERROR! Failed to setValue and/or setRecurse for %s\n" % myCriteria.id
                 
-        else:
-            print "NOTICE! No method of handling the criterion for %s\n" % criterion.id
-            import pdb; pdb.set_trace()
-            
+            else:
+                print "NOTICE! No method of handling the criterion for %s\n" % criterion.id
+                import pdb; pdb.set_trace()
+                
+    except KeyError:
+        print "ERROR! The current year folder did not contain a collection called 'full-list'"
+

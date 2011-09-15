@@ -8,7 +8,7 @@ print "<html><head><title>List of people</title></head><body><ul>";
 
 # get all the people
 people = context.portal_catalog(portal_type='FSDPerson')
-for person in people[:10]:
+for person in people:
     try:
         print "<li><a href=\"/people/%s/view\">%s</a></li>" % (person.id, person.Title)
     except:

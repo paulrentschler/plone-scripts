@@ -137,7 +137,10 @@ class FSDslinger(object):
                 fsdPerson = {}
                 for key, value in person.items():
                     try:
-                        fsdPerson[self.fieldnamesMap[key]] = value.strip()
+                        if self.fieldnamesMap[key] == "id":
+                            fsdPerson[self.fieldnamesMap[key]] = value.strip().lower()
+                        else:
+                            fsdPerson[self.fieldnamesMap[key]] = value.strip()
                     except KeyError:
                         print "No key [%s] in the fieldnames map" % key
                         pass
@@ -216,6 +219,7 @@ class FSDslinger(object):
                information based on what is contained in the newPersonData dictionary.
                """
             # get the existing person object from the Plone site
+            existingPersonData = {}
             existingPersonBrain = self.client.query({'Type': 'Person', 'id':newPersonData['id'].strip()})
             if len(existingPersonBrain) == 1:
                 existingPersonObj = self.client.get_object([existingPersonBrain.keys()[0]])

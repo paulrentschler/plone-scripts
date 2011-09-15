@@ -1,0 +1,20 @@
+# Script to output all of the urls for person objects within the site
+#
+# @author Paul Rentschler <par117@psu.edu>
+# @since 15 September 2011
+##
+
+print "<html><head><title>List of people</title></head><body><ul>";
+
+# get all the people
+people = context.portal_catalog(portal_type='FSDPerson')
+for person in people[:10]:
+    try:
+        print "<li><a href=\"/people/%s/view\">%s</a></li>" % (person.id, person.Title)
+    except:
+        pass
+
+print "</ul></body></html>";
+
+return printed
+

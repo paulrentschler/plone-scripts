@@ -132,30 +132,46 @@ object in the Plone site.
         # verify that the image directory exists
         if os.path.exists(self.imageDirectory):
             for filename in os.listdir(self.imageDirectory):
-                digitalId, extention = filename.rsplit('.', 1)
-                personPath = "%s/%s" % (self.fsd, digitalId)
-                try:
-                    image = open(self.getFullPath(filename))
-                    personData = { self.fsd + "/" + digitalId: [
-                        { 'image': Binary(image.read()) },
-                        'FSDPerson',
-                    ]}
-                except IOError:
-                    pass    #no image
-                
-                # get the current FSD person object
-                try:
-                    personObj = self.ploneClient.get_object([personPath])
+                if not self.isValidImage(filename):
+                    print "Not a valid image format for (%s)\n" % filename
                     
-                    # update the FSD person's image
+                else:
+                    digitalId, extension = filename.rsplit('.', 1)
+                    personPath = "%s/%s" % (self.fsd, digitalId)
                     try:
-                        self.ploneClient.put_object(personData)
-                        os.remove(self.getFullPath(filename))
-                    except:
-                        print "Failed to upload image (%s)\n" % filename
+                        image = open(self.getFullPath(filename))
+                        personData = { self.fsd + "/" + digitalId: [
+                            { 'image': Binary(image.read()) },
+                            'FSDPerson',
+                        ]}
+                    except IOError:
+                        pass    #no image
+                
+                    # get the current FSD person object
+                    try:
+                        personObj = self.ploneClient.get_object([personPath])
                     
-                except:
-                    print "No user found for image (%s)\n" % filename
+                        # update the FSD person's image
+                        try:
+                            self.ploneClient.put_object(personData)
+                            os.remove(self.getFullPath(filename))
+                        except:
+                            print "Failed to upload image (%s)\n" % filename
+                    
+                    except:
+                        print "No user found for image (%s)\n" % filename
+
+
+    def isValidImage (self, filename):
+        """Determines if the image is valid by looking at the filename extension
+           """
+        validExtensions = ['jpg', 'png', 'gif']
+        
+        name, extension = filename.rsplit('.', 1)
+        if extension in validExtensions:
+            return True
+            
+        return False
 
 
     def promptWithDefault(self, prompt, value):

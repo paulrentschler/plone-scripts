@@ -3,7 +3,7 @@
 """A module which allows for importing images for FSD people in a Plone site.
 
    TODO:
-     - python package for parsing command line parameters?
+     DONE - python package for parsing command line parameters?
      - prompt for deleting files after successful upload
      DONE - test with multiple files
      DONE - delete files after successful upload
@@ -13,58 +13,53 @@
 import sys
 import os
 import datetime
+import argparse
 from xmlrpclib import ServerProxy
 from xmlrpclib import Binary
 
 
-class AddFSDPhoto(object):
+class AddFSDPhotos(object):
+    # optionally specify default options here
     host = 'localhost'
     port = '8080'
     fsd = '/huck/people'
     imageDirectory = '/Users/par117lsb/import'
     user = 'admin'
+    password = ''  # don't specify a password, that's just bad :(
     ploneClient = False
+    args = []
 
 
     def __init__(self):
         """Processes the command line arguments and stores the values provided.
            """
-        if len(sys.argv) > 1 and sys.argv[1] == 'help':
-            self.displaySyntax()
-            
-        elif len(sys.argv) == 4:
-            # separate the host, port, and fsd path from the first command line argument
-            self.host, self.port = sys.argv[1].strip('http://').split(':')
-            self.port, self.fsd = self.port.split('/', 1)
-            self.fsd = '/' + self.fsd
-            
-            # store the image directory
-            self.imageDirectory = sys.argv[2]
-            
-            # store the username
-            self.user = sys.argv[3]
-            
-            # grab the password if provided
-            try:
-                password = sys.argv[4]
-            except:
-                password = False
-            
-        else:
-            # prompt for the host, port, fsd path, user, and images directory
-            self.getParameters()
-            password = False
-            
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-i", "--images", 
+                            help="directory that contains the images to import")
+        parser.add_argument("-s", "--siteurl",
+                            help="url, port, and path to the FSD directory in " +
+                                 "the site. example: " +
+                                 "http://localhost:8080/plone/people")
+        parser.add_argument("-u", "--username",
+                            help="zope level user to log in as")
+        parser.add_argument("-p", "--password",
+                            help="password for the zope level user")
+        parser.add_argument("-d", "--delete", action="store_true",
+                            help="delete images after successful import")
+        parser.add_argument("-o", "--overwrite", action="store_true",
+                            help="overwrite images if already present")
+        self.args = parser.parse_args()
+        
+        self.announce()
+        self.confirmSettings()
+        print "importing from: %s\n" % self.imageDirectory
+        
         # create the connection to the Plone site
-        if self.connectToPlone(password):
-            # process the directory of images
-            self.announce()
-            self.importImages()
-            print
-            
+        if self.connectToPlone():
+            self.processDirectory()
         else:
-            self.announce()
-            print "ERROR: failed to connect to the Plone site\n"
+            print "ERROR: failed to connect to the Plone site"
+        print
 
 
     def announce(self):
@@ -73,18 +68,60 @@ class AddFSDPhoto(object):
         now = datetime.datetime.now()
         print "\nFaculty/Staff Directory Image Importer:",
         print now.strftime("%a %e %b %Y - %H:%M:%S")
-        print "image directory: %s\n" % self.imageDirectory
+        print
 
 
-    def connectToPlone(self, password):
+    def confirmSettings(self):
+        """Confirms that we have all the settings needed to run the script
+           and prompts the user if we don't
+           """
+        # store the image directory
+        if self.args.images is not None and self.args.images != "":
+            self.imageDirectory = self.args.images
+        else:
+            self.imageDirectory = self.promptWithDefault(
+                "Enter the path to the directory with the images " +
+                "(ex: /home/user/images)",
+                self.imageDirectory)
+            
+        # separate the host, port, and fsd path from the url argument
+        if self.args.siteurl is not None and self.args.siteurl != "":
+            self.host, self.port = self.args.siteurl.strip('http://').split(':')
+            self.port, self.fsd = self.port.split('/', 1)
+            self.fsd = '/' + self.fsd
+        else:
+            self.host = self.promptWithDefault(
+                "What is the host name for the server (ex: localhost)",
+                self.host)
+            self.port = self.promptWithDefault(
+                "What port is Zope running on (ex: 8080)", self.port)
+            self.fsd = self.promptWithDefault(
+                "What is the path to the FSD directory (ex: /plone/people)",
+                self.fsd)
+            
+        # store the username
+        if self.args.username is not None and self.args.username != "":
+            self.user = self.args.username
+        else:
+            self.user = self.promptWithDefault(
+                "Enter the ZMI username to connect as", self.user)
+                
+        # store the password
+        if self.args.password is not None and self.args.password != "":
+            self.password = self.args.password
+        else:
+            self.password = raw_input("Enter the ZMI password for %s: " %
+                                      (self.user))
+
+
+    def connectToPlone(self):
         """Connect to the specified plone site with the provided credentials
            and set the client reference.
            """
-        if password == False:
-            password = raw_input("Enter the ZMI password for %s: " % (self.user))
-            
         ploneSite, path = self.fsd[1:].split('/', 1)
-        connectString = "http://%s:%s@%s:%s/%s" % (self.user, password, self.host, self.port, ploneSite)
+        connectString = "http://%s:%s@%s:%s/%s" % (self.user, self.password,
+                                                   self.host, self.port,
+                                                   ploneSite)
         try:
             self.ploneClient = ServerProxy(connectString)
             # attempt to get the plone site as a test of the connection
@@ -97,24 +134,6 @@ class AddFSDPhoto(object):
             return False
 
 
-    def displaySyntax(self):
-        """
-Import image files of people into the Faculty / Staff Directory of a Plone site
-from the command line. Image files must be named with the ID of the FSDPerson
-object in the Plone site.
-    syntax: importFSDPersonImage.py <FSD url> <directory> <username> <password>
-
-    FSD url       the URL, port, and path to the FSD directory you want to 
-                   work with
-                     example: http://localhost:8080/plone/people
-    directory      the directory that contains the images to process/import
-    username       the zope level user to log in as
-    password       the password for the zope level user (optional)
-
-        """
-        print self.displaySyntax.__doc__
-
-
     def getFullPath(self, filename):
         """Generates the full path and filename for the given filename using
            the imageDirectory property.
@@ -122,28 +141,10 @@ object in the Plone site.
         path = self.imageDirectory
         if path[0:-1] != "/":
             path += "/"
-            
         return path + filename
 
 
-    def getParameters(self):
-        """Asks the user to provide the host, port, FSD directory information,
-           username, and image directory.
-           """
-        self.imageDirectory = self.promptWithDefault(
-            "Enter the path to the directory with the images (ex: /home/user/images)",
-            self.imageDirectory)
-        self.host = self.promptWithDefault(
-            "What is the host name for the server (ex: localhost)", self.host)
-        self.port = self.promptWithDefault(
-            "What port is Zope running on (ex: 8080)", self.port)
-        self.fsd = self.promptWithDefault(
-            "What is the path to the FSD directory (ex: /plone/people)", self.fsd)
-        self.user = self.promptWithDefault(
-            "Enter the ZMI username to connect as", self.user)
-
-
-    def importImages(self):
+    def processDirectory(self):
         """Processes the image directory and imports any images into the
            Faculty/Staff Directory of the Plone site
            """
@@ -192,11 +193,9 @@ object in the Plone site.
         """Determines if the image is valid by looking at the filename extension
            """
         validExtensions = ['jpg', 'png', 'gif']
-        
         name, extension = filename.rsplit('.', 1)
         if extension in validExtensions:
             return True
-            
         return False
 
 
@@ -208,11 +207,10 @@ object in the Plone site.
             newValue = value
         elif newValue == ' ':
             newValue = ''
-
         return newValue
 
 
 
 if __name__ == '__main__':
-    obj = AddFSDPhoto()
+    obj = AddFSDPhotos()
 

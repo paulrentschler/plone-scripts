@@ -1,16 +1,8 @@
 #!/usr/bin/env python
 
 """A module which allows for importing images for FSD people in a Plone site.
-
-   TODO:
-     DONE - python package for parsing command line parameters?
-     - prompt for deleting files after successful upload
-     DONE - test with multiple files
-     DONE - delete files after successful upload
-     DONE - better output for logging purposes
    """
 
-import sys
 import os
 import datetime
 import argparse
@@ -22,8 +14,8 @@ class AddFSDPhotos(object):
     # optionally specify default options here
     host = 'localhost'
     port = '8080'
-    fsd = '/huck/people'
-    imageDirectory = '/Users/par117lsb/import'
+    fsd = '/plone/people'
+    imageDirectory = '~/import'
     user = 'admin'
     password = ''  # don't specify a password, that's just bad :(
     ploneClient = False
@@ -144,49 +136,32 @@ class AddFSDPhotos(object):
         return path + filename
 
 
-    def processDirectory(self):
-        """Processes the image directory and imports any images into the
-           Faculty/Staff Directory of the Plone site
+    def importImage(self, filename):
+        """Imports the image into the FSD person object
            """
-        # verify that the image directory exists
-        if os.path.exists(self.imageDirectory):
-            if len(os.listdir(self.imageDirectory)) == 0:
-                print "No files to process"
-                
+        digitalId, extension = filename.rsplit('.', 1)
+        personPath = "%s/%s" % (self.fsd, digitalId)
+        try:
+            image = open(self.getFullPath(filename))
+            personData = { personPath: [
+                { 'image': Binary(image.read()) },
+                'FSDPerson',
+            ]}
+        except IOError:
+            print "couldn't open image file"
+            
+        try:
+            # get the current FSD person object
+            personObj = self.ploneClient.get_object([personPath])
+            if personObj[personPath][0]['image'] != '':
+                if not self.args.overwrite:
+                    print "image exists (use -o to overwrite)"
+                else:
+                    self.updatePerson(personData, filename)
             else:
-                for filename in os.listdir(self.imageDirectory):
-                    print filename + " -",
-                
-                    if not self.isValidImage(filename):
-                        print "invalid image format"
-                    
-                    else:
-                        digitalId, extension = filename.rsplit('.', 1)
-                        personPath = "%s/%s" % (self.fsd, digitalId)
-                        try:
-                            image = open(self.getFullPath(filename))
-                            personData = { self.fsd + "/" + digitalId: [
-                                { 'image': Binary(image.read()) },
-                                'FSDPerson',
-                            ]}
-                        except IOError:
-                            print "couldn't open image file"
-                
-                        # get the current FSD person object
-                        try:
-                            personObj = self.ploneClient.get_object([personPath])
-                    
-                            # update the FSD person's image
-                            try:
-                                self.ploneClient.put_object(personData)
-                                print "updated",
-                                os.remove(self.getFullPath(filename))
-                                print "- file deleted"
-                            except:
-                                print "upload failed"
-                    
-                        except:
-                            print "no user found"
+                self.updatePerson(personData, filename)
+        except:
+            print "no user found"
 
 
     def isValidImage (self, filename):
@@ -199,6 +174,23 @@ class AddFSDPhotos(object):
         return False
 
 
+    def processDirectory(self):
+        """Processes the image directory and imports any images into the
+           Faculty/Staff Directory of the Plone site
+           """
+        # verify that the image directory exists
+        if os.path.exists(self.imageDirectory):
+            if len(os.listdir(self.imageDirectory)) == 0:
+                print "No files to process"
+            else:
+                for filename in os.listdir(self.imageDirectory):
+                    print filename + " -",
+                    if not self.isValidImage(filename):
+                        print "invalid image format"
+                    else:
+                        self.importImage(filename)
+
+
     def promptWithDefault(self, prompt, value):
         """Prompts the user for a value and provides a default value.
            """
@@ -208,6 +200,22 @@ class AddFSDPhotos(object):
         elif newValue == ' ':
             newValue = ''
         return newValue
+
+
+    def updatePerson(self, personData, filename):
+        """Updates the person object with personData and deletes filename
+           if successful and -d is set
+           """
+        try:
+            self.ploneClient.put_object(personData)
+            print "updated",
+            if self.args.delete:
+                os.remove(self.getFullPath(filename))
+                print "- file deleted"
+            else:
+                print
+        except:
+            print "upload failed"
 
 
 

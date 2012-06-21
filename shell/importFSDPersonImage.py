@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 
-"""A module which allows for importing images for FSD people in a Plone site."""
+"""A module which allows for importing images for FSD people in a Plone site.
+
+   TODO:
+     - python package for parsing command line parameters?
+     - prompt for deleting files after successful upload
+     - test with multiple files
+     DONE - delete files after successful upload
+     - better output for logging purposes
+   """
 
 import sys
 import os
@@ -136,15 +144,18 @@ object in the Plone site.
                     pass    #no image
                 
                 # get the current FSD person object
-                personObj = self.ploneClient.get_object([personPath])
-                import pdb; pdb.set_trace()
-                
-                self.ploneClient.put_object(personData)                
-                import pdb; pdb.set_trace()
-                #try:
-                #    self.ploneClient.put_object(personData)
-                #except:
-                #    print "Failed to upload image\n"
+                try:
+                    personObj = self.ploneClient.get_object([personPath])
+                    
+                    # update the FSD person's image
+                    try:
+                        self.ploneClient.put_object(personData)
+                        os.remove(self.getFullPath(filename))
+                    except:
+                        print "Failed to upload image (%s)\n" % filename
+                    
+                except:
+                    print "No user found for image (%s)\n" % filename
 
 
     def promptWithDefault(self, prompt, value):

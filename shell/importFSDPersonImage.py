@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 
-"""A module which allows for importing images for FSD people in a Plone site.
+"""Command line script for importing images of people into their
+   Faculty/Staff Directory person objects in a Plone site.
+   
+   Use AT YOUR OWN RISK! Suggestions and improvements welcome.
+   
+   Requires: Plone 3.x or greater website (plone.org)
+             Faculty/Staff Directory 2.x or greater (http://plone.org/products/faculty-staff-directory)
+             Web Services API for Plone (http://plone.org/products/wsapi4plone.core)
+             
+   Paul Rentschler <par117@psu.edu>
    """
 
 import os

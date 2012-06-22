@@ -8,7 +8,12 @@
    Requires: Plone 3.x or greater website (plone.org)
              Faculty/Staff Directory 2.x or greater (http://plone.org/products/faculty-staff-directory)
              Web Services API for Plone (http://plone.org/products/wsapi4plone.core)
-             
+   
+   Notes: - images must be sized prior to importing via this script
+          - images must end in .jpg, .png, or .gif - modify isValidImage() to change
+          - images must be named with the person object's ID and the extension
+          - may not work with a folder that has a large number of image files
+   
    Paul Rentschler <par117@psu.edu>
    """
 

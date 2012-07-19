@@ -4,6 +4,7 @@
 
 import sys
 import ldapLookup
+import getpass
 from xmlrpclib import ServerProxy
 
 
@@ -97,7 +98,8 @@ class AddFSDPerson(object):
         """Establishes a connection to the Plone site.
            """
         user = self._promptWithDefault("Enter the ZMI username to connect as", 'admin')
-        pw = raw_input("Enter the ZMI password for %s: " % (user))
+        pw = getpass.getpass(prompt="Enter the ZMI password: ")
+        print pw
         plone, path = self.fsd[1:].split('/', 1)
         connectString = "http://%s:%s@%s:%s%s" % (user, pw, self.host, self.port, '/' + plone)
         try:

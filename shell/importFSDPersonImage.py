@@ -28,8 +28,8 @@ class AddFSDPhotos(object):
     # optionally specify default options here
     host = 'localhost'
     port = '8080'
-    fsd = '/plone/people'
-    imageDirectory = '~/import'
+    fsd = '/Plone/people'
+    imageDirectory = '/import'
     user = 'admin'
     password = ''  # don't specify a password, that's just bad :(
     ploneClient = False
@@ -132,7 +132,7 @@ class AddFSDPhotos(object):
             self.ploneClient = ServerProxy(connectString)
             # attempt to get the plone site as a test of the connection
             try:
-                site = self.ploneClient.get_object([ploneSite])
+                site = self.ploneClient.get_object([self.fsd])
                 return True
             except:
                 return False

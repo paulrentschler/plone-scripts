@@ -20,6 +20,7 @@
 import os
 import datetime
 import argparse
+import getpass
 from xmlrpclib import ServerProxy
 from xmlrpclib import Binary
 
@@ -28,7 +29,7 @@ class AddFSDPhotos(object):
     # optionally specify default options here
     host = 'localhost'
     port = '8080'
-    fsd = '/Plone/people'
+    fsd = '/huck/people'
     imageDirectory = '/import'
     user = 'admin'
     password = ''  # don't specify a password, that's just bad :(
@@ -116,8 +117,7 @@ class AddFSDPhotos(object):
         if self.args.password is not None and self.args.password != "":
             self.password = self.args.password
         else:
-            self.password = raw_input("Enter the ZMI password for %s: " %
-                                      (self.user))
+            self.password = getpass.getpass("Enter the ZMI password: ")
 
 
     def connectToPlone(self):

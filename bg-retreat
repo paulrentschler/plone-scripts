@@ -1,0 +1,40 @@
+# Script (Python) "bg-retreat.py"
+# Redirects to the current BG retreat event or retreats folder if there is no
+#   current or future retreat that exists
+#
+# @author Paul Rentschler <par117@psu.edu>
+# @since  20 August 2012
+#
+
+# folder where the BG retreats live
+folder_path = '/huck/education/bioinformatics-and-genomics/retreats'
+
+# get all of the BG retreat events from the catalog
+events = context.portal_catalog(
+    portal_type='Event', 
+    review_state='published', 
+    path={'query': folder_path, 'depth': 2}, 
+    expires={'query': DateTime(), 'range': 'min'},
+    sort_on='start', 
+    sort_order='descending')
+
+#for event in events:
+#    print "%s" % event.Title
+
+# determine where to send the visitor
+if len(events) > 0:
+    event = events[0].getObject()
+    if event.endDate >= DateTime():
+        destination = event.absolute_url()
+    else:
+        if event.aq_parent.default_page == event.id:
+            destination = event.aq_parent.aq_parent.absolute_url()
+        else:
+            destination = event.aq_parent.absolute_url()
+else:
+    url_path = "/".join(folder_path.split('/')[2:])
+    destination = context.portal_url()+"/"+url_path
+
+container.REQUEST.RESPONSE.redirect(destination)
+#print "redirect to %s" % destination
+#return printed

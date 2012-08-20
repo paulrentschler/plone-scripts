@@ -11,7 +11,7 @@ folder_path = '/huck/education/bioinformatics-and-genomics/retreats'
 
 # get all of the BG retreat events from the catalog
 events = context.portal_catalog(
-    portal_type='Event', 
+    portal_type='Conference', 
     review_state='published', 
     path={'query': folder_path, 'depth': 2}, 
     expires={'query': DateTime(), 'range': 'min'},
